@@ -29,6 +29,7 @@ class Game
     buffers = []
     current_buffer = ""
     won_game = false
+    answer = "mruby"
 
     previous_btn_state = dc2d_class::get_button_state
     while running do
@@ -51,6 +52,8 @@ class Game
           current_buffer.chop!
         elsif(current_letter == " ")
           if(current_buffer.size == WORD_LENGTH && buffers.size < MAX_ATTEMPTS)
+            won_game = true if(current_buffer.downcase == answer.downcase)
+            screen.draw_coloured_buffer(current_buffer, buffers.size, answer)
             buffers.push(current_buffer)
             current_buffer = ""
           end
@@ -189,9 +192,59 @@ class Screen
     }
   end
 
+  def draw_coloured_buffer(buffer, y_idx, answer)
+    render_coloured_buffer(buffer, y_idx, answer)
+  end
+
+  def render_coloured_buffer(buffer, y_idx, answer)
+    buffer.split('').each_with_index { |c, idx|
+      r, g, b = get_bg_colour(c, idx, answer)
+      puts("colour: #{r}, #{g}, #{b}")
+      draw_coloured_boxed_letter(c, idx, y_idx, 240, 240, 240, r, g, b)
+    }
+  end
+
+  # TODO: move out of this class
+  def get_bg_colour(character, index, answer)
+    puts "answer: #{answer}, character: #{character}"
+    if(character.downcase == answer[index].downcase)
+      # green
+      return 106, 170, 100
+    elsif contains?(answer.downcase, character.downcase)
+      # yellow
+      return 201, 180, 88
+    else
+      # grey
+      return 120, 124, 126
+    end
+  end
+
+  def contains?(answer, character)
+    answer.split('').each { |c|
+      return true if c == character
+    }
+    return false
+  end
+
+  def render_buffer(buffer, y_idx)
+    buffer.split('').each_with_index { |c, idx|
+      draw_boxed_letter(c, idx, y_idx)
+    }
+  end
+
+  def draw_coloured_boxed_letter(letter, x, y, r, g, b, bg_r, bg_g, bg_b)
+    draw_filled_letterbox(x, y, bg_r, bg_g, bg_b)
+    dc2d_class::draw_string_640(letter[0..0], x*23+LEFT_SPACE_PX+4, y*34+TOP_SPACE_PX+5, r, g, b, 0)
+  end
+
   def draw_boxed_letter(letter, x, y)
     draw_letterbox(x, y)
     dc2d_class::draw_string_640(letter[0..0], x*23+LEFT_SPACE_PX+4, y*34+TOP_SPACE_PX+5, 0, 0, 0, 0)
+  end
+
+  def draw_filled_letterbox(x, y, r, g, b)
+    dc2d_class::fill_rectangle_640(x*24+LEFT_SPACE_PX, y*33+TOP_SPACE_PX, 18, 30, r, g, b)
+    draw_letterbox(x, y)
   end
 
   def draw_blank_letterbox(x, y)
@@ -221,7 +274,7 @@ class Screen
   end
 
   def you_win
-    dc2d_class::fill_rectangle_640(150, 150, 340, 180, 16, 224, 16)
+    dc2d_class::fill_rectangle_640(150, 150, 340, 180, 16, 160, 16)
     dc2d_class::draw_string_640("You Win!", 248, 224, 255, 255, 255, 0)
   end
 
