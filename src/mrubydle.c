@@ -34,7 +34,7 @@ void *read_buttons() {
   }
 }
 
-mrb_value init_controller_buffer(mrb_state *mrb, mrb_value self) {
+static mrb_value init_controller_buffer(mrb_state *mrb, mrb_value self) {
   btn_mrb_buffer = mrb_ary_new(mrb);;
   input_buf.index = 0;
 
@@ -47,18 +47,18 @@ mrb_value init_controller_buffer(mrb_state *mrb, mrb_value self) {
   return mrb_nil_value();
 }
 
-mrb_value start_controller_reader(mrb_state *mrb, mrb_value self) {
+static mrb_value start_controller_reader(mrb_state *mrb, mrb_value self) {
   thd_create(1, read_buttons, NULL);
 
   // start thread
   return mrb_fixnum_value(0);
 }
 
-mrb_value get_current_ms(mrb_state *mrb, mrb_value self) {
+static mrb_value get_current_ms(mrb_state *mrb, mrb_value self) {
     return mrb_fixnum_value(timer_ms_gettime64());
 }
 
-mrb_value put_pixel640(mrb_state *mrb, mrb_value self) {
+static mrb_value put_pixel640(mrb_state *mrb, mrb_value self) {
   mrb_int x, y, r, g, b;
   mrb_get_args(mrb, "iiiii", &x, &y, &r, &g, &b);
 
@@ -73,15 +73,7 @@ static mrb_value waitvbl(mrb_state *mrb, mrb_value self) {
   return mrb_nil_value();
 }
 
-static mrb_value get_button_state(mrb_state *mrb, mrb_value self) {
-  if(maple_enum_type(0, MAPLE_FUNC_CONTROLLER)){
-    return mrb_fixnum_value(input_buf.buffer[input_buf.index]);
-  } else {
-    return mrb_nil_value();
-  }
-}
-
-mrb_value get_next_button_state(mrb_state *mrb, mrb_value self) {
+static mrb_value get_next_button_state(mrb_state *mrb, mrb_value self) {
   mrb_int wanted_index;
   mrb_get_args(mrb, "i", &wanted_index);
   int curr_index = input_buf.index;
@@ -95,107 +87,6 @@ mrb_value get_next_button_state(mrb_state *mrb, mrb_value self) {
   } else {
     return mrb_fixnum_value(input_buf.buffer[wanted_index]);
   }
-}
-
-mrb_value get_current_button_index(mrb_state *mrb, mrb_value self) {
-  return mrb_fixnum_value(input_buf.index);
-}
-
-// synchronises input buf with btn_mrb_buffer
-static mrb_value get_button_states(mrb_state *mrb, mrb_value self) {
-  static mrb_int btn_mrb_index;
-  mrb_int idx;
-  mrb_get_args(mrb, "i", &idx);
-
-  btn_mrb_index = input_buf.index; // Background thread may be updating buf index
-
-  int j;
-  for(j=0 ; j < BUFSIZE ; j++) { printf("%d,", (int)input_buf.buffer[j]); }
-  printf("\n\n");
-
-  // see if arena thing helps...
-  int arena_idx = mrb_gc_arena_save(mrb);
-  while(idx != btn_mrb_index) {
-    mrb_ary_set(mrb, btn_mrb_buffer, idx, mrb_fixnum_value(input_buf.buffer[idx]));
-
-    idx = (idx + 1) % BUFSIZE; // last position has been read, so skip
-  }
-  // one more to copy at btn_mrb_index
-  mrb_ary_set(mrb, btn_mrb_buffer, idx, mrb_fixnum_value(input_buf.buffer[idx]));
-
-  mrb_gc_arena_restore(mrb, arena_idx);
-
-  static mrb_value result_array;
-  result_array = mrb_ary_new(mrb);
-
-  mrb_ary_push(mrb, result_array, mrb_fixnum_value(btn_mrb_index));
-  mrb_ary_push(mrb, result_array, btn_mrb_buffer);
-
-  return result_array;
-}
-
-static mrb_value start_btn(mrb_state *mrb, mrb_value self) {
-  struct mrb_value state;
-  mrb_get_args(mrb, "i", &state);
-
-  return mrb_bool_value(mrb_fixnum(state) & CONT_START);
-}
-
-static mrb_value dpad_left(mrb_state *mrb, mrb_value self) {
-  struct mrb_value state;
-  mrb_get_args(mrb, "i", &state);
-
-  return mrb_bool_value(mrb_fixnum(state) & CONT_DPAD_LEFT);
-}
-
-static mrb_value dpad_right(mrb_state *mrb, mrb_value self) {
-  struct mrb_value state;
-  mrb_get_args(mrb, "i", &state);
-
-  return mrb_bool_value(mrb_fixnum(state) & CONT_DPAD_RIGHT);
-}
-
-static mrb_value dpad_up(mrb_state *mrb, mrb_value self) {
-  struct mrb_value state;
-  mrb_get_args(mrb, "i", &state);
-
-  return mrb_bool_value(mrb_fixnum(state) & CONT_DPAD_UP);
-}
-
-static mrb_value dpad_down(mrb_state *mrb, mrb_value self) {
-  struct mrb_value state;
-  mrb_get_args(mrb, "i", &state);
-
-  return mrb_bool_value(mrb_fixnum(state) & CONT_DPAD_DOWN);
-}
-
-static mrb_value btn_b(mrb_state *mrb, mrb_value self) {
-  struct mrb_value state;
-  mrb_get_args(mrb, "i", &state);
-
-  return mrb_bool_value(mrb_fixnum(state) & CONT_B);
-}
-
-static mrb_value btn_a(mrb_state *mrb, mrb_value self) {
-  struct mrb_value state;
-  mrb_get_args(mrb, "i", &state);
-
-  return mrb_bool_value(mrb_fixnum(state) & CONT_A);
-}
-
-mrb_value get_button_masks(mrb_state *mrb, mrb_value self) {
-  mrb_value mask_array;
-  mask_array = mrb_ary_new(mrb);
-
-  mrb_ary_push(mrb, mask_array, mrb_fixnum_value(CONT_START));
-  mrb_ary_push(mrb, mask_array, mrb_fixnum_value(CONT_DPAD_LEFT));
-  mrb_ary_push(mrb, mask_array, mrb_fixnum_value(CONT_DPAD_RIGHT));
-  mrb_ary_push(mrb, mask_array, mrb_fixnum_value(CONT_DPAD_UP));
-  mrb_ary_push(mrb, mask_array, mrb_fixnum_value(CONT_DPAD_DOWN));
-  mrb_ary_push(mrb, mask_array, mrb_fixnum_value(CONT_A));
-  mrb_ary_push(mrb, mask_array, mrb_fixnum_value(CONT_B));
-
-  return mask_array;
 }
 
 void draw_rect_640(int x, int y, int w, int h, int r, int g, int b) {
@@ -262,6 +153,54 @@ static mrb_value draw_letter_640(mrb_state *mrb, mrb_value self) {
   return mrb_nil_value();
 }
 
+static mrb_value get_button_state(mrb_state *mrb, mrb_value self) {
+  maple_device_t *cont1;
+  cont_state_t *state;
+  if((cont1 = maple_enum_type(0, MAPLE_FUNC_CONTROLLER))){
+    state = (cont_state_t *)maple_dev_status(cont1);
+    return mrb_fixnum_value(state->buttons);
+  }
+  return mrb_nil_value();
+}
+
+static mrb_value check_btn(mrb_state *mrb, mrb_value self, uint16 target) {
+  struct mrb_value state;
+  mrb_get_args(mrb, "i", &state);
+
+//  if(mrb_fixnum(state)) {
+//    printf("state: %ld, target: %d, result: %ld\n", mrb_fixnum(state), target, mrb_fixnum(state) & target);
+//  }
+  return mrb_bool_value(mrb_fixnum(state) & target);
+}
+
+static mrb_value btn_start(mrb_state *mrb, mrb_value self) {
+  return check_btn(mrb, self, CONT_START);
+};
+
+static mrb_value btn_a(mrb_state *mrb, mrb_value self) {
+  return check_btn(mrb, self, CONT_A);
+};
+
+static mrb_value btn_b(mrb_state *mrb, mrb_value self) {
+  return check_btn(mrb, self, CONT_B);
+};
+
+static mrb_value dpad_down(mrb_state *mrb, mrb_value self) {
+  return check_btn(mrb, self, CONT_DPAD_DOWN);
+};
+
+static mrb_value dpad_up(mrb_state *mrb, mrb_value self) {
+  return check_btn(mrb, self, CONT_DPAD_UP);
+};
+
+static mrb_value dpad_right(mrb_state *mrb, mrb_value self) {
+  return check_btn(mrb, self, CONT_DPAD_RIGHT);
+};
+
+static mrb_value dpad_left(mrb_state *mrb, mrb_value self) {
+  return check_btn(mrb, self, CONT_DPAD_LEFT);
+};
+
 void print_exception(mrb_state* mrb) {
   if(mrb->exc) {
     mrb_value backtrace = mrb_get_backtrace(mrb);
@@ -280,28 +219,13 @@ void define_module_functions(mrb_state* mrb, struct RClass* module) {
   mrb_define_module_function(mrb, module, "draw_letter_640", draw_letter_640, MRB_ARGS_REQ(7));
   mrb_define_module_function(mrb, module, "fill_rectangle_640", fill_rectangle_640, MRB_ARGS_REQ(7));
   mrb_define_module_function(mrb, module, "waitvbl", waitvbl, MRB_ARGS_NONE());
-
-  // TODO: get rid of single
   mrb_define_module_function(mrb, module, "get_button_state", get_button_state, MRB_ARGS_NONE());
-  mrb_define_module_function(mrb, module, "get_button_states", get_button_states, MRB_ARGS_REQ(1));
-  mrb_define_module_function(mrb, module, "get_next_button_state", get_next_button_state, MRB_ARGS_REQ(1));
-  mrb_define_module_function(mrb, module, "get_current_button_index", get_current_button_index, MRB_ARGS_NONE());
-
-  // TODO: maybe switch to doing these in mruby?
-  mrb_define_module_function(mrb, module, "start_btn?", start_btn, MRB_ARGS_REQ(1));
-  mrb_define_module_function(mrb, module, "dpad_left?", dpad_left, MRB_ARGS_REQ(1));
-  mrb_define_module_function(mrb, module, "dpad_right?", dpad_right, MRB_ARGS_REQ(1));
-  mrb_define_module_function(mrb, module, "dpad_up?", dpad_up, MRB_ARGS_REQ(1));
-  mrb_define_module_function(mrb, module, "dpad_down?", dpad_down, MRB_ARGS_REQ(1));
+  mrb_define_module_function(mrb, module, "btn_start?", btn_start, MRB_ARGS_REQ(1));
   mrb_define_module_function(mrb, module, "btn_a?", btn_a, MRB_ARGS_REQ(1));
   mrb_define_module_function(mrb, module, "btn_b?", btn_b, MRB_ARGS_REQ(1));
+  mrb_define_module_function(mrb, module, "dpad_down?", dpad_down, MRB_ARGS_REQ(1));
+  mrb_define_module_function(mrb, module, "dpad_up?", dpad_up, MRB_ARGS_REQ(1));
+  mrb_define_module_function(mrb, module, "dpad_right?", dpad_right, MRB_ARGS_REQ(1));
+  mrb_define_module_function(mrb, module, "dpad_left?", dpad_left, MRB_ARGS_REQ(1));
 
-  mrb_define_module_function(mrb, module, "get_button_masks", get_button_masks, MRB_ARGS_NONE());
-
-  mrb_define_module_function(mrb, module, "get_current_ms", get_current_ms, MRB_ARGS_NONE());
-  mrb_define_module_function(mrb, module, "start_controller_reader", start_controller_reader, MRB_ARGS_NONE());
-  mrb_define_module_function(mrb, module, "init_controller_buffer", init_controller_buffer, MRB_ARGS_NONE());
-
-  // TODO: stop_controller_reader?
-  // get_input_buffer
 }
