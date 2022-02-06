@@ -55,6 +55,7 @@ class Game
             won_game = true if(current_buffer.downcase == answer.downcase)
             screen.draw_coloured_buffer(current_buffer, buffers.size, answer)
             buffers.push(current_buffer)
+            draw_qwerty(buffers, answer)
             current_buffer = ""
           end
         else
@@ -122,10 +123,37 @@ class Game
     ["A", "S", "D", "F", "G", "H", "J", "K", "L", "<"],
     ["Z", "X", "C", "V", "B", "N", "M", " "]
   ]
-  def draw_qwerty
+  def draw_qwerty(buffers = [], answer = "")
     QWERTY.each_with_index { |qwerty_row, i|
       qwerty_row.each_with_index { |character, j|
-        screen.draw_boxed_letter(character, j + KB_OFFSET_X, i + KB_OFFSET_Y)
+        # for each character
+        colours = buffers.map { |guess|
+          guess.split('').each_with_index.map { |x, i|
+            if x == character
+              get_bg_colour(x, i, answer)
+            else
+              :none
+            end
+          }
+        }.flatten
+
+        colour = if colours.any? { |c| c == :green }
+          :green
+        elsif colours.any? { |c| c == :yellow }
+          :yellow
+        elsif buffers.flatten.join('').split('').any? { |ch| ch == character }
+          :grey
+        else
+          :none
+        end
+
+        puts "char: #{character}, colour: #{colour}"
+
+        bg_r, bg_g, bg_b = rgb(colour)
+        r, g, b = 0, 0, 0
+        r, g, b = 240, 240, 240 unless colour == :none
+
+        screen.draw_coloured_boxed_letter(character,  j + KB_OFFSET_X, i + KB_OFFSET_Y, r, g, b, bg_r, bg_g, bg_b)
       }
     }
   end
@@ -167,6 +195,36 @@ class Controller
   end
 end
 
+def rgb(colour_name)
+  if colour_name == :green
+    return 106, 170, 100
+  elsif colour_name == :yellow
+    return 201, 180, 88
+  elsif colour_name == :grey
+    return 120, 124, 126
+  elsif colour_name = :none
+    return 240, 240, 240
+  end
+end
+
+def get_bg_colour(character, index, answer)
+  puts "answer: #{answer}, character: #{character}, index: #{index}"
+  if(character.downcase == answer[index].downcase)
+    :green
+  elsif contains?(answer.downcase, character.downcase)
+    :yellow
+  else
+    :grey
+  end
+end
+
+def contains?(answer, character)
+  answer.split('').each { |c|
+    return true if c == character
+  }
+  return false
+end
+
 class Screen
   LEFT_SPACE_PX=260
   TOP_SPACE_PX=20
@@ -198,32 +256,10 @@ class Screen
 
   def render_coloured_buffer(buffer, y_idx, answer)
     buffer.split('').each_with_index { |c, idx|
-      r, g, b = get_bg_colour(c, idx, answer)
+      r, g, b = rgb(get_bg_colour(c, idx, answer))
       puts("colour: #{r}, #{g}, #{b}")
       draw_coloured_boxed_letter(c, idx, y_idx, 240, 240, 240, r, g, b)
     }
-  end
-
-  # TODO: move out of this class
-  def get_bg_colour(character, index, answer)
-    puts "answer: #{answer}, character: #{character}"
-    if(character.downcase == answer[index].downcase)
-      # green
-      return 106, 170, 100
-    elsif contains?(answer.downcase, character.downcase)
-      # yellow
-      return 201, 180, 88
-    else
-      # grey
-      return 120, 124, 126
-    end
-  end
-
-  def contains?(answer, character)
-    answer.split('').each { |c|
-      return true if c == character
-    }
-    return false
   end
 
   def render_buffer(buffer, y_idx)
@@ -243,7 +279,7 @@ class Screen
   end
 
   def draw_filled_letterbox(x, y, r, g, b)
-    dc2d_class::fill_rectangle_640(x*24+LEFT_SPACE_PX, y*33+TOP_SPACE_PX, 18, 30, r, g, b)
+    dc2d_class::fill_rectangle_640(x*23+LEFT_SPACE_PX, y*34+TOP_SPACE_PX, 18, 30, r, g, b)
     draw_letterbox(x, y)
   end
 
@@ -255,10 +291,6 @@ class Screen
   # x, y are grid positions, not pixels
   def draw_letterbox(x, y)
     dc2d_class::draw_rectangle_640(x*23+LEFT_SPACE_PX, y*34+TOP_SPACE_PX, 20, 32, 0, 0, 0)
-  end
-
-  def fill_square(x, y, r, g, b)
-    dc2d_class::fill20x20_640(x*20+LEFT_SPACE_PX, y*20+TOP_SPACE_PX, r, g, b)
   end
 
   def draw_background
