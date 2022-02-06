@@ -4,6 +4,7 @@ class Game
   GRID_COLS=5
   KB_OFFSET_X = -2
   KB_OFFSET_Y = 9
+  MAX_BUFSIZE = 5
 
   attr_reader :screen, :dc2d_class, :controller
   attr_accessor :cursor_pos, :prev_cursor_pos
@@ -26,10 +27,12 @@ class Game
     screen.draw_background
     draw_grid
     draw_qwerty
+    current_buffer = ""
 
     previous_btn_state = dc2d_class::get_button_state
     while running do
       dc2d_class::waitvbl
+      screen.draw_buffer(current_buffer)
       current_btn_state = dc2d_class::get_button_state
       draw_cursor
 
@@ -39,8 +42,15 @@ class Game
         move_cursor(previous_btn_state, current_btn_state)
       end
 
+      if(controller.a_down?(previous_btn_state, current_btn_state))
+        current_letter = QWERTY[cursor_pos[:y]][cursor_pos[:x]]
+        if(current_letter == "<")
+          current_buffer.chop!
+        else
+          current_buffer.concat(current_letter) if current_buffer.size < MAX_BUFSIZE
+        end
+      end
 
-      puts "A pressed" if(controller.a_down?(previous_btn_state, current_btn_state))
       puts "B pressed" if(controller.b_down?(previous_btn_state, current_btn_state))
       puts "START pressed" if(controller.start_down?(previous_btn_state, current_btn_state))
 
@@ -142,9 +152,30 @@ class Screen
     @dc2d_class = dc2d_class
   end
 
+  def draw_buffer(buffer)
+    y_idx = 0
+    render_buffer(buffer, y_idx)
+    render_trailing_space(buffer.size, y_idx)
+  end
+
+  def render_trailing_space(buffsize, y_idx)
+    (buffsize..4).each { |x| draw_blank_letterbox(x, y_idx) }
+  end
+
+  def render_buffer(buffer, y_idx)
+    buffer.split('').each_with_index { |c, idx|
+      draw_boxed_letter(c, idx, y_idx)
+    }
+  end
+
   def draw_boxed_letter(letter, x, y)
     draw_letterbox(x, y)
     dc2d_class::draw_letter_640(letter[0..0], x*23+LEFT_SPACE_PX+4, y*34+TOP_SPACE_PX+5, 0, 0, 0, 0)
+  end
+
+  def draw_blank_letterbox(x, y)
+    dc2d_class::fill_rectangle_640(x*24+LEFT_SPACE_PX, y*33+TOP_SPACE_PX, 18, 30, 240, 240, 240)
+    draw_letterbox(x, y)
   end
 
   # x, y are grid positions, not pixels
