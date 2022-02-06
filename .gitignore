@@ -1,0 +1,9 @@
+.DS_Store
+*.o
+*.elf
+romdisk.*
+test_bin
+game.c
+*.bin
+*.cdi
+cd_root/1ST_READ.BIN
