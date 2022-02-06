@@ -16,6 +16,7 @@ class Game
   end
 
   def main
+    @wordlist = dc2d_class::read_whole_txt_file("/rd/wordlist.txt").split("\n")
     while true do
       game_loop
     end
@@ -29,7 +30,7 @@ class Game
     buffers = []
     current_buffer = ""
     won_game = false
-    answer = "mruby"
+    answer = @wordlist.sample
 
     previous_btn_state = dc2d_class::get_button_state
     while running do
@@ -51,7 +52,7 @@ class Game
         if(current_letter == "<")
           current_buffer.chop!
         elsif(current_letter == " ")
-          if(current_buffer.size == WORD_LENGTH && buffers.size < MAX_ATTEMPTS)
+          if(current_buffer.size == WORD_LENGTH && buffers.size < MAX_ATTEMPTS && @wordlist.include?(current_buffer.downcase))
             won_game = true if(current_buffer.downcase == answer.downcase)
             screen.draw_coloured_buffer(current_buffer, buffers.size, answer)
             buffers.push(current_buffer)
@@ -71,7 +72,7 @@ class Game
     if won_game
       screen.you_win
     else
-      screen.game_over
+      screen.game_over(answer)
     end
 
     waiting = true
@@ -310,8 +311,9 @@ class Screen
     dc2d_class::draw_string_640("You Win!", 248, 224, 255, 255, 255, 0)
   end
 
-  def game_over
+  def game_over(answer)
     dc2d_class::fill_rectangle_640(150, 150, 340, 180, 16, 16, 16)
-    dc2d_class::draw_string_640("Game Over!", 240, 224, 255, 255, 255, 0)
+    dc2d_class::draw_string_640("Game Over! Answer: #{answer}", 180, 224, 255, 255, 255, 0)
   end
 end
+

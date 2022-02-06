@@ -212,7 +212,41 @@ void print_exception(mrb_state* mrb) {
   }
 }
 
+static mrb_value read_whole_txt_file(mrb_state *mrb, mrb_value self) {
+  char buffer[2048];
+  int length;
+  file_t f;
+  mrb_value m_path;
+  char *path;
+
+  char *result = NULL;
+  result = mrb_malloc(mrb, sizeof(char));
+  *result = '\0';
+
+  mrb_get_args(mrb, "S", &m_path);
+  path = mrb_str_to_cstr(mrb, m_path);
+  f = fs_open(path, O_RDONLY);
+
+  if(f < 0) {
+    printf("Failed to open %s.\n", path);
+    return mrb_nil_value();
+  }
+
+  while((length = fs_read(f, buffer, 2048))) {
+    printf("read %i chars into buf.\n", length);
+    result = mrb_realloc(mrb, result, strlen(result) + length + 1); // 1 for '\0'
+    strncat(result, buffer, length);
+  }
+
+  fs_close(f);
+  mrb_value whole_str_mrb = mrb_str_new_cstr(mrb, result);
+  mrb_free(mrb, result);
+
+  return whole_str_mrb;
+}
+
 void define_module_functions(mrb_state* mrb, struct RClass* module) {
+  mrb_define_module_function(mrb, module, "read_whole_txt_file", read_whole_txt_file, MRB_ARGS_REQ(1));
   mrb_define_module_function(mrb, module, "put_pixel640", put_pixel640, MRB_ARGS_REQ(5));
   mrb_define_module_function(mrb, module, "fill20x20_640", fill20x20_640, MRB_ARGS_REQ(5));
   mrb_define_module_function(mrb, module, "draw_rectangle_640", draw_rectangle_640, MRB_ARGS_REQ(7));
