@@ -198,6 +198,18 @@ mrb_value get_button_masks(mrb_state *mrb, mrb_value self) {
   return mask_array;
 }
 
+void draw_rect_640(int x, int y, int w, int h, int r, int g, int b) {
+  int i = 0, j = 0;
+
+  for(i = 0; i < h; i++) {
+    for(j = 0; j < w; j++) {
+      if(i == 0 || j == 0 || i == h - 1 || j == w - 1) {
+        vram_s[x+j + (y+i) * 640] = PACK_PIXEL(r, g, b);
+      }
+    }
+  }
+}
+
 static mrb_value draw20x20_640(mrb_state *mrb, mrb_value self) {
   mrb_int x, y, r, g, b;
   mrb_get_args(mrb, "iiiii", &x, &y, &r, &g, &b);
@@ -207,16 +219,25 @@ static mrb_value draw20x20_640(mrb_state *mrb, mrb_value self) {
   return mrb_nil_value();
 }
 
-static mrb_value draw_rectangle_640(mrb_state *mrb, mrb_value self) {
-  mrb_int x, y, w, h, r, g, b;
-  mrb_get_args(mrb, "iiiiiii", &x, &y, &w, &h, &r, &g, &b);
+static mrb_value fill20x20_640(mrb_state *mrb, mrb_value self) {
+  mrb_int x, y, r, g, b;
+  mrb_get_args(mrb, "iiiii", &x, &y, &r, &g, &b);
 
-  draw_rect_640(x, y, w, h, r, g, b);
+  fill_rect_640(x, y, 20, 20, r, g, b);
 
   return mrb_nil_value();
 }
 
-void draw_rect_640(x, y, w, h, r, g, b) {
+static mrb_value fill_rectangle_640(mrb_state *mrb, mrb_value self) {
+  mrb_int x, y, w, h, r, g, b;
+  mrb_get_args(mrb, "iiiiiii", &x, &y, &w, &h, &r, &g, &b);
+
+  fill_rect_640(x, y, w, h, r, g, b);
+
+  return mrb_nil_value();
+}
+
+void fill_rect_640(x, y, w, h, r, g, b) {
   int i = 0, j = 0;
 
   for(i = 0; i < h; i++) {
@@ -239,8 +260,9 @@ void print_exception(mrb_state* mrb) {
 
 void define_module_functions(mrb_state* mrb, struct RClass* module) {
   mrb_define_module_function(mrb, module, "put_pixel640", put_pixel640, MRB_ARGS_REQ(5));
+  mrb_define_module_function(mrb, module, "fill20x20_640", fill20x20_640, MRB_ARGS_REQ(5));
   mrb_define_module_function(mrb, module, "draw20x20_640", draw20x20_640, MRB_ARGS_REQ(5));
-  mrb_define_module_function(mrb, module, "draw_rectangle_640", draw_rectangle_640, MRB_ARGS_REQ(7));
+  mrb_define_module_function(mrb, module, "fill_rectangle_640", fill_rectangle_640, MRB_ARGS_REQ(7));
   mrb_define_module_function(mrb, module, "waitvbl", waitvbl, MRB_ARGS_NONE());
 
   // TODO: get rid of single
