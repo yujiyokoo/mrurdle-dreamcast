@@ -138,7 +138,7 @@ static mrb_value fill_rectangle_640(mrb_state *mrb, mrb_value self) {
   return mrb_nil_value();
 }
 
-static mrb_value draw_letter_640(mrb_state *mrb, mrb_value self) {
+static mrb_value draw_string_640(mrb_state *mrb, mrb_value self) {
   const int PX_PER_LINE = 640;
   mrb_int x, y, r, g, b, bg_on;
   char *unwrapped_content;
@@ -216,7 +216,7 @@ void define_module_functions(mrb_state* mrb, struct RClass* module) {
   mrb_define_module_function(mrb, module, "put_pixel640", put_pixel640, MRB_ARGS_REQ(5));
   mrb_define_module_function(mrb, module, "fill20x20_640", fill20x20_640, MRB_ARGS_REQ(5));
   mrb_define_module_function(mrb, module, "draw_rectangle_640", draw_rectangle_640, MRB_ARGS_REQ(7));
-  mrb_define_module_function(mrb, module, "draw_letter_640", draw_letter_640, MRB_ARGS_REQ(7));
+  mrb_define_module_function(mrb, module, "draw_string_640", draw_string_640, MRB_ARGS_REQ(7));
   mrb_define_module_function(mrb, module, "fill_rectangle_640", fill_rectangle_640, MRB_ARGS_REQ(7));
   mrb_define_module_function(mrb, module, "waitvbl", waitvbl, MRB_ARGS_NONE());
   mrb_define_module_function(mrb, module, "get_button_state", get_button_state, MRB_ARGS_NONE());

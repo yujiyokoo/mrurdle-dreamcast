@@ -1,10 +1,9 @@
 
 class Game
-  GRID_ROWS=6
-  GRID_COLS=5
   KB_OFFSET_X = -2
   KB_OFFSET_Y = 9
-  MAX_BUFSIZE = 5
+  WORD_LENGTH = 5
+  MAX_ATTEMPTS = 6
 
   attr_reader :screen, :dc2d_class, :controller
   attr_accessor :cursor_pos, :prev_cursor_pos
@@ -27,33 +26,56 @@ class Game
     screen.draw_background
     draw_grid
     draw_qwerty
+    buffers = []
     current_buffer = ""
+    won_game = false
 
     previous_btn_state = dc2d_class::get_button_state
     while running do
       dc2d_class::waitvbl
-      screen.draw_buffer(current_buffer)
+      screen.draw_buffer(current_buffer, buffers.size)
       current_btn_state = dc2d_class::get_button_state
       draw_cursor
 
+      # Moving cursor?
       if(dpad_any_down?(previous_btn_state, current_btn_state))
         erase_cursor
         prev_cursor_pos = cursor_pos
         move_cursor(previous_btn_state, current_btn_state)
       end
 
+      # Letter selected?
       if(controller.a_down?(previous_btn_state, current_btn_state))
         current_letter = QWERTY[cursor_pos[:y]][cursor_pos[:x]]
         if(current_letter == "<")
           current_buffer.chop!
+        elsif(current_letter == " ")
+          if(current_buffer.size == WORD_LENGTH && buffers.size < MAX_ATTEMPTS)
+            buffers.push(current_buffer)
+            current_buffer = ""
+          end
         else
-          current_buffer.concat(current_letter) if current_buffer.size < MAX_BUFSIZE
+          current_buffer.concat(current_letter) if current_buffer.size < WORD_LENGTH
         end
       end
 
-      puts "B pressed" if(controller.b_down?(previous_btn_state, current_btn_state))
-      puts "START pressed" if(controller.start_down?(previous_btn_state, current_btn_state))
+      previous_btn_state = current_btn_state
 
+      running = false if won_game || buffers.size == MAX_ATTEMPTS
+    end
+
+    if won_game
+      screen.you_win
+    else
+      screen.game_over
+    end
+
+    waiting = true
+    previous_btn_state = dc2d_class::get_button_state
+    while waiting do
+      dc2d_class::waitvbl
+      current_btn_state = dc2d_class::get_button_state
+      waiting = false if controller.a_down?(previous_btn_state, current_btn_state)
       previous_btn_state = current_btn_state
     end
   end
@@ -85,9 +107,9 @@ class Game
   end
 
   def draw_grid
-    (0..GRID_ROWS-1).each { |y|
-      (0..GRID_COLS-1).each { |x|
-        screen.draw_boxed_letter(" ", x, y)
+    (0..MAX_ATTEMPTS-1).each { |y|
+      (0..WORD_LENGTH-1).each { |x|
+        screen.draw_blank_letterbox(x, y)
       }
     }
   end
@@ -95,7 +117,7 @@ class Game
   QWERTY=[
     ["Q", "W", "E", "R", "T", "Y", "U", "I", "O", "P"],
     ["A", "S", "D", "F", "G", "H", "J", "K", "L", "<"],
-    ["Z", "X", "C", "V", "B", "N", "M"]
+    ["Z", "X", "C", "V", "B", "N", "M", " "]
   ]
   def draw_qwerty
     QWERTY.each_with_index { |qwerty_row, i|
@@ -152,8 +174,7 @@ class Screen
     @dc2d_class = dc2d_class
   end
 
-  def draw_buffer(buffer)
-    y_idx = 0
+  def draw_buffer(buffer, y_idx)
     render_buffer(buffer, y_idx)
     render_trailing_space(buffer.size, y_idx)
   end
@@ -170,7 +191,7 @@ class Screen
 
   def draw_boxed_letter(letter, x, y)
     draw_letterbox(x, y)
-    dc2d_class::draw_letter_640(letter[0..0], x*23+LEFT_SPACE_PX+4, y*34+TOP_SPACE_PX+5, 0, 0, 0, 0)
+    dc2d_class::draw_string_640(letter[0..0], x*23+LEFT_SPACE_PX+4, y*34+TOP_SPACE_PX+5, 0, 0, 0, 0)
   end
 
   def draw_blank_letterbox(x, y)
@@ -197,5 +218,15 @@ class Screen
 
   def draw_cursor(x, y)
     dc2d_class::draw_rectangle_640(x*23+LEFT_SPACE_PX-1, y*34+TOP_SPACE_PX-1, 22, 34, 0, 0, 255)
+  end
+
+  def you_win
+    dc2d_class::fill_rectangle_640(150, 150, 340, 180, 16, 224, 16)
+    dc2d_class::draw_string_640("You Win!", 248, 224, 255, 255, 255, 0)
+  end
+
+  def game_over
+    dc2d_class::fill_rectangle_640(150, 150, 340, 180, 16, 16, 16)
+    dc2d_class::draw_string_640("Game Over!", 240, 224, 255, 255, 255, 0)
   end
 end
