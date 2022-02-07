@@ -17,6 +17,10 @@ class Game
 
   def main
     @wordlist = dc2d_class::read_whole_txt_file("/rd/wordlist.txt").split("\n")
+    screen.draw_background(16, 128, 16)
+    dc2d_class::draw_string_640("mrurdle", 248, 224, 255, 255, 255, 0)
+    dc2d_class::draw_string_640("Press A", 248, 310, 255, 255, 255, 0)
+    wait_for_input
     while true do
       game_loop
     end
@@ -24,7 +28,7 @@ class Game
 
   def game_loop
     running = true
-    screen.draw_background
+    screen.draw_background(240, 240, 240)
     draw_grid
     draw_qwerty
     buffers = []
@@ -75,10 +79,15 @@ class Game
       screen.game_over(answer)
     end
 
+    wait_for_input
+  end
+
+  def wait_for_input
     waiting = true
     previous_btn_state = dc2d_class::get_button_state
     while waiting do
       dc2d_class::waitvbl
+      rand
       current_btn_state = dc2d_class::get_button_state
       waiting = false if controller.a_down?(previous_btn_state, current_btn_state)
       previous_btn_state = current_btn_state
@@ -294,8 +303,8 @@ class Screen
     dc2d_class::draw_rectangle_640(x*23+LEFT_SPACE_PX, y*34+TOP_SPACE_PX, 20, 32, 0, 0, 0)
   end
 
-  def draw_background
-    dc2d_class::fill_rectangle_640(0, 0, 640, 480, 240, 240, 240)
+  def draw_background(r, g, b)
+    dc2d_class::fill_rectangle_640(0, 0, 640, 480, r, g, b)
   end
 
   def erase_cursor(x, y)
