@@ -316,13 +316,13 @@ class Screen
   end
 
   def you_win
-    dc2d_class::fill_rectangle_640(150, 150, 340, 180, 16, 160, 16)
-    dc2d_class::draw_string_640("You Win!", 248, 224, 255, 255, 255, 0)
+    dc2d_class::fill_rectangle_640(150, 230, 340, 60, 16, 160, 16)
+    dc2d_class::draw_string_640("You Win!", 268, 254, 255, 255, 255, 0)
   end
 
   def game_over(answer)
-    dc2d_class::fill_rectangle_640(150, 150, 340, 180, 16, 16, 16)
-    dc2d_class::draw_string_640("Game Over! Answer: #{answer}", 180, 224, 255, 255, 255, 0)
+    dc2d_class::fill_rectangle_640(150, 230, 340, 60, 16, 16, 16)
+    dc2d_class::draw_string_640("Game Over! Answer: #{answer}", 180, 254, 255, 255, 255, 0)
   end
 end
 
