@@ -1,4 +1,3 @@
-
 class Game
   KB_OFFSET_X = -2
   KB_OFFSET_Y = 9
@@ -289,12 +288,12 @@ class Screen
   end
 
   def draw_filled_letterbox(x, y, r, g, b)
-    dc2d_class::fill_rectangle_640(x*23+LEFT_SPACE_PX, y*34+TOP_SPACE_PX, 18, 30, r, g, b)
+    dc2d_class::fill_rectangle_640(x*23+LEFT_SPACE_PX, y*34+TOP_SPACE_PX, 20, 32, r, g, b)
     draw_letterbox(x, y)
   end
 
   def draw_blank_letterbox(x, y)
-    dc2d_class::fill_rectangle_640(x*24+LEFT_SPACE_PX, y*33+TOP_SPACE_PX, 18, 30, 240, 240, 240)
+    dc2d_class::fill_rectangle_640(x*23+LEFT_SPACE_PX, y*34+TOP_SPACE_PX, 20, 32, 240, 240, 240)
     draw_letterbox(x, y)
   end
 
