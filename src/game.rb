@@ -16,6 +16,7 @@ class Game
 
   def main
     @wordlist = dc2d_class::read_whole_txt_file("/rd/wordlist.txt").split("\n")
+    @answerlist = dc2d_class::read_whole_txt_file("/rd/answerlist.txt").split("\n")
     screen.draw_background(16, 128, 16)
     dc2d_class::draw_string_640("mrurdle", 248, 224, 255, 255, 255, 0)
     dc2d_class::draw_string_640("Press A", 248, 310, 255, 255, 255, 0)
@@ -33,7 +34,7 @@ class Game
     buffers = []
     current_buffer = ""
     won_game = false
-    answer = @wordlist.sample
+    answer = @answerlist.sample
 
     previous_btn_state = dc2d_class::get_button_state
     while running do
@@ -55,7 +56,7 @@ class Game
         if(current_letter == "<")
           current_buffer.chop!
         elsif(current_letter == " ")
-          if(current_buffer.size == WORD_LENGTH && buffers.size < MAX_ATTEMPTS && @wordlist.include?(current_buffer.downcase))
+          if(current_buffer.size == WORD_LENGTH && buffers.size < MAX_ATTEMPTS ) # && @wordlist.include?(current_buffer.downcase))
             won_game = true if(current_buffer.downcase == answer.downcase)
             screen.draw_coloured_buffer(current_buffer, buffers.size, answer)
             buffers.push(current_buffer)
